@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import docx
 import docx2txt
 import pypandoc
@@ -177,7 +176,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     if text[2]: 
         docxFilename = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(filename)
         output = pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(filename[:filename.find('.docx')]) + '.txt')
-        # Возможные кодировки: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
+        # asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
         # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
         # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
         # markdown_mmd, markdown_phpextra, markdown_strict, markua, mediawiki, ms, muse, native, odt, opendocument, opml, 
@@ -226,7 +225,7 @@ def delete_files():
 directory, files = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents', []
 delete_files()
 if not os.path.isdir("New Documents"): os.mkdir("New Documents")
-assert len(os.listdir(directory)) > 0, 'Download files in the folder'
+assert len(os.listdir(directory)) > 0
 for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     if os.path.isfile(f) and filename.endswith('.docx'): 
