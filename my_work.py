@@ -18,7 +18,9 @@ start_time = time.time()
 def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', left_margin = 30, right_margin = 15, top_margin = 20, bottom_margin = 20):
 
     def adding_margins(name): 
-
+        #fis[oafidcnffjf
+        #    ConnectionRefusedErrordfjndfg
+        #    dfklgdfkndj
         text, foot_flag, num_footnotes, image_flag = [], False, [], False
         document = docx2python(r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(name))
         for obj in document.body:
