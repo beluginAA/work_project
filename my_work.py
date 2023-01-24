@@ -21,6 +21,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
         #def find_words(words):
         #    for i in words:
         #        if not any(map(str.isdigit, i)): 
+        #RSOGFIHHQ3IUOEGFSND
 
         text, foot_flag, num_footnotes, image_flag = [], False, [], False
         document = docx2python(r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(name))
