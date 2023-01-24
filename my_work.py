@@ -42,12 +42,10 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                             if phrase[0] == ' ': del phrase[0]
                         for _ in range(12): phrase = np.insert(phrase, 0, ' ')
                         phrase = ''.join(phrase)
-                        #find_words(phrase.split())
                         text.append(phrase)
                         num_footnotes.append(1)
                         foot_flag = True
                     else:
-                        #print(obj[0][0][line].split())
                         phrase = list(obj[0][0][line])
                         if obj[0][0][line].find('\t') != -1: 
                             text.append(obj[0][0][line][obj[0][0][line].find('--\t') + 1 :])
@@ -176,7 +174,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     if text[2]: 
         docxFilename = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(filename)
         output = pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(filename[:filename.find('.docx')]) + '.txt')
-        # asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
+        # Codecs: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
         # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
         # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
         # markdown_mmd, markdown_phpextra, markdown_strict, markua, mediawiki, ms, muse, native, odt, opendocument, opml, 
@@ -225,7 +223,7 @@ def delete_files():
 directory, files = r'C:\Users\AlABelugin\Desktop\Project\Words\Documents', []
 delete_files()
 if not os.path.isdir("New Documents"): os.mkdir("New Documents")
-assert len(os.listdir(directory)) > 0
+assert len(os.listdir(directory)) > 0, 'Download files in the folder'
 for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     if os.path.isfile(f) and filename.endswith('.docx'): 
