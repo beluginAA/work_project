@@ -18,9 +18,6 @@ start_time = time.time()
 def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', left_margin = 30, right_margin = 15, top_margin = 20, bottom_margin = 20):
 
     def adding_margins(name): 
-        #fis[oafidcnffjf
-        #    ConnectionRefusedErrordfjndfg
-        #    dfklgdfkndj
         text, foot_flag, num_footnotes, image_flag = [], False, [], False
         document = docx2python(r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(name))
         for obj in document.body:
@@ -67,8 +64,14 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                         num_footnotes.append(0)
         return text, num_footnotes, foot_flag, image_flag
 
+    def find_words(words):
+        for word in words:
+            pass
+
     def adding_list(name):
-        if text[0][name].find('-\t') != -1: paragrahp = new_doc.add_paragraph(text[0][name][text[0][name].find('\t') + 1 :], style = 'List Bullet')
+        if text[0][name].find('-\t') != -1: 
+            find_words(text[0][name][text[0][name].find('\t') + 1 :].split())
+            paragrahp = new_doc.add_paragraph(text[0][name][text[0][name].find('\t') + 1 :], style = 'List Bullet')
         else: paragrahp = new_doc.add_paragraph(text[0][name][text[name].find('\t') + 1 :], style = 'List Number')
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -81,6 +84,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
         if headings[name] and text[0][name - 1] != '' and name != 0:
                 paragrahp = new_doc.add_paragraph('')
         paragrahp = new_doc.add_paragraph('')
+        find_words(text[0][name].split())
         run = paragrahp.add_run(text[0][name])
         run.bold = True
         run.font.size = Pt(pt+2)
@@ -93,6 +97,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     def adding_paragraph(name):
         if name != 0:
             if pictures[name - 1] == 1 and text[0][name] != ' ':
+                find_words(text[0][name].split())
                 paragrahp = new_doc.add_paragraph('')
                 run = paragrahp.add_run(text[0][name])
                 run.italic = True
@@ -100,6 +105,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             else:
+                find_words(text[0][name].split())
                 paragrahp = new_doc.add_paragraph(text[0][name])
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -121,11 +127,13 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 table.cell(row ,col).vertical_alignment = WD_ALIGN_VERTICAL.CENTER
                 if row == 0: 
                     p = table.cell(row, col).add_paragraph('')
+                    find_words(txt[name][row][col])
                     run = p.add_run(txt[name][row][col])
                     run.bold = True
                     run.font.size = Pt(pt+2)
                     p.alignment=WD_ALIGN_PARAGRAPH.CENTER
                 else:
+                    find_words(txt[name][row][col])
                     p = table.cell(row, col).add_paragraph(txt[name][row][col])
                     p.alignment=WD_ALIGN_PARAGRAPH.CENTER
 
@@ -148,6 +156,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 if f[word].find('footnote') != -1:
                     summa += 1
                     footnotes[summa] = f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')]
+                    find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
         os.remove(r'C:\Users\AlABelugin\Desktop\Project\Words\Documents\\' + str(name[:name.find('.docx')]) + '.txt')
         return footnotes
     
