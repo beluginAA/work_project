@@ -67,6 +67,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     def find_words(words):
         for word in words:
             pass
+            #rfvfndhc
 
     def adding_list(name):
         if text[0][name].find('-\t') != -1: 
