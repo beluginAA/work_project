@@ -16,7 +16,7 @@ from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.section import WD_ORIENT
 
 start_time = time.time()
-
+#fjvnfjdcndjdjvndj
 def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', left_margin = 30, right_margin = 15, top_margin = 20, bottom_margin = 20):
 
     def adding_margins(name): 
