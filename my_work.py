@@ -7,11 +7,11 @@ import os
 import time
 import numpy as np
 from PIL import Image
+from pathlib import Path
 from docx.oxml import OxmlElement, ns
 from docx2python import docx2python
 from docx.shared import Pt, Mm
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_PARAGRAPH_ALIGNMENT
-from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.section import WD_ORIENT
 
@@ -21,7 +21,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
 
     def adding_margins(name): 
         text, foot_flag, num_footnotes, header_text, table_word = [], False, [], [], []
-        document = docx2python(directory + '\\' + str(name))
+        document = docx2python(Path("Documents") / str(name))
         for obj in document.body:
             if len(obj) > 1 and len(obj[0][0]) == 1:
                 numbers = [[obj[_][number][0] for number in range(len(obj[0]))] for _ in range(len(obj))]
@@ -80,7 +80,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     def find_words(words):
         if len(words) > 0:
             for word in words:
-                if word.lower() == 'èç':
+                if word.lower() == 'Ð¸Ð·':
                     pass
 
     def adding_list(name):
@@ -157,15 +157,15 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                     p.alignment=WD_ALIGN_PARAGRAPH.CENTER
 
     def adding_picture(name):
-        with Image.open(directory + '\\' + str(text[0][name])) as img:
+        with Image.open(Path("Documents") / str(text[0][name])) as img:
             width, height = img.size
-            img.save(directory + '\\' + str(text[0][name]) , dpi=(800, 800))
+            img.save(Path("Documents") / str(text[0][name]) , dpi=(800, 800))
         if width > 700:
-            new_doc.add_picture(directory + '\\' + str(text[0][name]), width = Mm(width/4.25), height = Mm(height/4.25))
+            new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/4.25), height = Mm(height/4.25))
         else:
-            new_doc.add_picture(directory + '\\' + str(text[0][name]), width = Mm(width/3.5), height = Mm(height/3.5))
+            new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/3.5), height = Mm(height/3.5))
         new_doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        os.remove(directory + '\\' + str(text[0][name]))
+        os.remove(Path("Documents") / str(text[0][name]))
 
     def adding_footnotes(name):
         with open(directory + '\\' + str(name[:name.find('.docx')]) + '.txt', 'r', encoding = 'utf8') as file:
@@ -214,8 +214,8 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
 
     text = adding_margins(str(filename))
     if text[2]: 
-        docxFilename = directory + '\\' + str(filename)
-        pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = directory + '\\' + str(filename[:filename.find('.docx')]) + '.txt')
+        docxFilename = Path("Documents") / str(filename) 
+        pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = Path("Documents") / str(filename[:filename.find('.docx')]) + '.txt')
         # Codecs: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
         # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
         # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
@@ -223,11 +223,11 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
         # org, pdf, plain, pptx, revealjs, rst, rtf, s5, slideous, slidy, tei, texinfo, textile, xwiki, zimwiki
         footnotes = adding_footnotes(filename)
     upper_header_list, lower_header_list, header_flag = [], [], False
-    for split in docx2txt.process(directory + '\\' + str(filename),directory).split('\n'):
+    for split in docx2txt.process(Path("Documents") / str(filename),directory).split('\n'):
         if split != '':
             if split == text[0][0]:break
             else: upper_header_list.append(split)
-    for split in docx2txt.process(directory + '\\' + str(filename),directory).split('\n'):
+    for split in docx2txt.process(Path("Documents") / str(filename),directory).split('\n'):
         if split != '':
             if split not in text[-2] and split not in text[-1] and split not in upper_header_list: 
                 lower_header_list.append(split)
@@ -262,17 +262,17 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 run.font.size = Pt(10)
     if header_flag: adding_headers_and_footers(upper_header_list, lower_header_list)
     add_page_number(new_doc.sections[0].footer.paragraphs[0])
-    save_name = r'C:\Users' + os.getcwd()[os.getcwd().find('\\') + 6 :] + '\\New Documents\\' + '_' + str(filename)
+    save_name = Path("New Documents") / str(filename)
     new_doc.save(save_name)
 
 def delete_files():
-    directory = r'C:\Users\AlABelugin\Desktop\Project\Words\New Documents'
+    directory = Path("New Documents")
     if os.path.isdir("New Documents"):
         for filename in os.listdir(directory):
             f = os.path.join(directory, filename)
             if os.path.isfile(f) and filename.endswith('.docx'): os.remove(f)
 
-directory, files = os.getcwd() + '\Documents', []
+directory, files = Path("Documents"), []
 delete_files()
 if not os.path.isdir("New Documents"): os.mkdir("New Documents")
 assert len(os.listdir(directory)) > 0, 'Download files in the folder'
