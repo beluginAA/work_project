@@ -284,3 +284,4 @@ for filename in os.listdir(directory):
 
 end_time = time.time()
 print(end_time - start_time)
+print('---------')
