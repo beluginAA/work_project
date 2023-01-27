@@ -40,7 +40,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                             num_footnotes.append(0)
                             image_flag = True
                         elif obj[0][0][line].find('footnote') != -1:
-                            phrase = np.array(list(obj[0][0][line][: obj[0][0][line].find('----')]))
+                            phrase = list(obj[0][0][line][: obj[0][0][line].find('----')])
                             while True:
                                 if phrase[0].isalpha() : break
                                 if phrase[0] == ' ': del phrase[0]
@@ -168,7 +168,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
         os.remove(Path("Documents") / str(text[0][name]))
 
     def adding_footnotes(name):
-        with open(directory + '\\' + str(name[:name.find('.docx')]) + '.txt', 'r', encoding = 'utf8') as file:
+        with open(os.path.join("Documents", str(name[:name.find('.docx')]) + '.txt' ), 'r', encoding = 'utf8') as file:
             f = file.readlines()
             footnotes, summa = {}, 0
             for word in range(len(f)):
@@ -176,7 +176,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                     summa += 1
                     footnotes[summa] = f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')]
                     find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
-        os.remove(directory + '\\' + str(name[:name.find('.docx')]) + '.txt')
+        os.remove(os.path.join("Documents", str(name[:name.find('.docx')]) + '.txt' ))
         return footnotes
     
     def adding_headers_and_footers(up, down):
@@ -214,8 +214,8 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
 
     text = adding_margins(str(filename))
     if text[2]: 
-        docxFilename = Path("Documents") / str(filename) 
-        pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = Path("Documents") / str(filename[:filename.find('.docx')]) + '.txt')
+        docxFilename = os.path.join("Documents", str(filename) ) 
+        pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = os.path.join("Documents", str(filename[:filename.find('.docx')]) + '.txt'))
         # Codecs: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
         # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
         # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
