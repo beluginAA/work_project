@@ -337,6 +337,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
     save_name = Path("New Documents") / str(filename)
     new_doc.save(save_name)
 
+#gvfhndmf
 def delete_files():
     directory = Path("New Documents")
     if os.path.isdir("New Documents"):
