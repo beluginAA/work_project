@@ -310,6 +310,7 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
             paragrahp = adding_list(phrase)
             if text[1][phrase]:
                 summa += 1
+                #fghjk
                 run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
                 run.bold = True
                 run.font.size = Pt(10)
