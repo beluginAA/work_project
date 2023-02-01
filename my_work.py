@@ -17,18 +17,29 @@ from docx.enum.section import WD_ORIENT
 
 start_time = time.time()
 
-def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', left_margin = 30, right_margin = 15, top_margin = 20, bottom_margin = 20):
+class new_document:
 
-    def adding_margins(name): 
+    def __init__(self, filename, pt, line_spacing, font_name, left_margin, right_margin, top_margin, bottom_margin):
+        self.filename = filename
+        self.pt, self.line_spacing, self.font_name, self.left_margin = pt, line_spacing, font_name, left_margin
+        self.right_margin, self.top_margin, self.bottom_margin = right_margin, top_margin, bottom_margin
+
+    @staticmethod
+    def find_words(words):
+        if len(words) > 0:
+            for word in words:
+                if word.lower() == 'из':
+                    pass
+
+    def adding_margins(self):
         text, foot_flag, num_footnotes, header_text, table_word = [], False, [], [], []
-        document = docx2python(Path("Documents") / str(name))
+        document = docx2python(Path("Documents") / str(self.filename))
         for obj in document.body:
             if len(obj) > 1 and len(obj[0][0]) == 1:
                 numbers = [[obj[_][number][0] for number in range(len(obj[0]))] for _ in range(len(obj))]
                 text.append(numbers)
                 for main in numbers:
-                    for letter in main:
-                        table_word.append(letter)
+                    for letter in main: table_word.append(letter)
                 header_text.append(numbers)
                 num_footnotes.append(0)
             elif len(obj) == 1 and len(obj[0][0]) >= 1:
@@ -38,7 +49,6 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                             text.append(obj[0][0][line][obj[0][0][line].find('media') + 6 :][: obj[0][0][line][obj[0][0][line].find('media') + 6 :].find('----')])
                             header_text.append(obj[0][0][line][obj[0][0][line].find('media') + 6 :][: obj[0][0][line][obj[0][0][line].find('media') + 6 :].find('----')])
                             num_footnotes.append(0)
-                            image_flag = True
                         elif obj[0][0][line].find('footnote') != -1:
                             phrase = list(obj[0][0][line][: obj[0][0][line].find('----')])
                             while True:
@@ -76,74 +86,88 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                             text.append(phrase)
                             num_footnotes.append(0)
         return text, num_footnotes, foot_flag, header_text, table_word
-
-    def find_words(words):
-        if len(words) > 0:
-            for word in words:
-                if word.lower() == 'из':
-                    pass
-
-    def adding_list(name):
-        if text[0][name].find('-\t') != -1: 
-            find_words(text[0][name][text[0][name].find('\t') + 1 :].split())
-            paragrahp = new_doc.add_paragraph(text[0][name][text[0][name].find('\t') + 1 :], style = 'List Bullet')
-        else: paragrahp = new_doc.add_paragraph(text[0][name][text[name].find('\t') + 1 :], style = 'List Number')
-        p_fmt = paragrahp.paragraph_format
-        p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p_fmt.line_spacing = line_spacing
-        p_fmt.space_before = Pt(line_spacing)
-        p_fmt.space_after = Pt(line_spacing)
-        return paragrahp
-
-    def adding_heading(name):
+    
+    def adding_footnotes(self):
+        with open(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt' ), 'r', encoding = 'utf8') as file:
+            f = file.readlines()
+            footnotes, summa = {}, 0
+            for word in range(len(f)):
+                if f[word].find('footnote') != -1:
+                    summa += 1
+                    footnotes[summa] = f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')]
+                    self.find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
+        os.remove(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt' ))
+        return footnotes
+    
+    def adding_heading(self, name):
         if text[0][name] == '' and headings[name - 1] == 0 and name + 1 <= len(headings): 
             try: headings[name + 1] == 0
             except IndexError: return 
             else: return
-        if headings[name] and text[0][name - 1] != '' and name != 0:
-                paragrahp = new_doc.add_paragraph('')
+        if headings[name] and text[0][name - 1] != '' and name != 0: paragrahp = new_doc.add_paragraph('')
         paragrahp = new_doc.add_paragraph('')
-        find_words(text[0][name].split())
+        self.find_words(text[0][name].split())
         run = paragrahp.add_run(text[0][name])
         run.bold = True
-        run.font.size = Pt(pt+2)
+        run.font.size = Pt(self.pt+2)
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p_fmt.line_spacing = 1.5
         p_fmt.space_before = Pt(1.5)
         p_fmt.space_after = Pt(1.5)
 
-    def adding_paragraph(name):
+    def adding_paragraph(self, name):
         if name != 0:
             if tables[name + 1] == 1:
                 new_doc.add_paragraph(' ')
-                find_words(text[0][name].split())
+                self.find_words(text[0][name].split())
                 paragrahp = new_doc.add_paragraph('')
                 run = paragrahp.add_run(text[0][name])
                 run.italic = True
-                run.font.size = Pt(pt - 2)
+                run.font.size = Pt(self.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             elif pictures[name - 1] == 1 and text[0][name] != ' ':
-                find_words(text[0][name].split())
+                self.find_words(text[0][name].split())
                 paragrahp = new_doc.add_paragraph('')
                 run = paragrahp.add_run(text[0][name])
                 run.italic = True
-                run.font.size = Pt(pt - 2)
+                run.font.size = Pt(self.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             else:
-                find_words(text[0][name].split())
+                self.find_words(text[0][name].split())
                 paragrahp = new_doc.add_paragraph(text[0][name])
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            p_fmt.line_spacing = line_spacing
-            p_fmt.space_before = Pt(line_spacing)
-            p_fmt.space_after = Pt(line_spacing)
+            p_fmt.line_spacing = self.line_spacing
+            p_fmt.space_before = Pt(self.line_spacing)
+            p_fmt.space_after = Pt(self.line_spacing)
         return paragrahp
-
-    def adding_table(txt, name, pt):
-        doc = docx.Document(Path("Documents") / str(filename))
+    
+    def adding_picture(self, name):
+        with Image.open(Path("Documents") / str(text[0][name])) as img:
+            width, height = img.size
+            img.save(Path("Documents") / str(text[0][name]) , dpi=(800, 800), optimize=True, quality=100)
+        if width > 700: new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/4.25), height = Mm(height/4.25))
+        else: new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/3.5), height = Mm(height/3.5))
+        new_doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        os.remove(Path("Documents") / str(text[0][name]))
+    
+    def adding_list(self, name):
+        if text[0][name].find('-\t') != -1: 
+            self.find_words(text[0][name][text[0][name].find('\t') + 1 :].split())
+            paragrahp = new_doc.add_paragraph(text[0][name][text[0][name].find('\t') + 1 :], style = 'List Bullet')
+        else: paragrahp = new_doc.add_paragraph(text[0][name][text[name].find('\t') + 1 :], style = 'List Number')
+        p_fmt = paragrahp.paragraph_format
+        p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_fmt.line_spacing = self.line_spacing
+        p_fmt.space_before = Pt(self.line_spacing)
+        p_fmt.space_after = Pt(self.line_spacing)
+        return paragrahp
+    
+    def adding_table(self, txt, name):
+        doc = docx.Document(Path("Documents") / str(self.filename))
         unique, merged, max_row, max_col, added, cells_text, all_cells_text = [], [], np.array([]), np.array([]), [], [], []
         for row in doc.tables[table_num].rows:
             info = []
@@ -154,20 +178,20 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 if tc.bottom - tc.top > 1:
                     if cell_loc not in merged: 
                         info.append(cell.text)
-                        all_cells_text.append(cell.text)
+                        all_cells_text.extend(cell.text.split('\n'))
                     else: 
                         info.append(' ')
                         all_cells_text.append(' ')
                 elif tc.right - tc.left > 1:
                     if cell_loc not in merged: 
                         info.append(cell.text)
-                        all_cells_text.append(cell.text)
+                        all_cells_text.extend(cell.text.split('\n'))
                     else: 
                         info.append(' ')
                         all_cells_text.append(' ')
                 else: 
                     info.append(cell.text)
-                    all_cells_text.append(cell.text)
+                    all_cells_text.extend(cell.text.split('\n'))
                 if tc.bottom - tc.top > 1 or tc.right - tc.left > 1 and cell_loc not in merged: merged.append(cell_loc)
                 else: unique.append(cell_loc)
             cells_text.append(info)
@@ -184,18 +208,18 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                 if row == 0: 
                     p = table.cell(row, col).add_paragraph('')
                     if cells_text[row][col] != ' ':
-                        find_words(cells_text[row][col])
+                        self.find_words(cells_text[row][col])
                         run = p.add_run(cells_text[row][col])
                         if len(txt[name][0]) == 1:
-                            run.font.size = Pt(pt)
+                            run.font.size = Pt(self.pt)
                             p.alignment=WD_ALIGN_PARAGRAPH.LEFT
                         else:
                             run.bold = True
-                            run.font.size = Pt(pt+2)
+                            run.font.size = Pt(self.pt+2)
                             p.alignment=WD_ALIGN_PARAGRAPH.CENTER
                 else:
                     if cells_text[row][col] != '':
-                        find_words(cells_text[row][col])
+                        self.find_words(cells_text[row][col])
                         p = table.cell(row, col).add_paragraph(cells_text[row][col])
                         p.alignment=WD_ALIGN_PARAGRAPH.CENTER
         if tables[name + 1] == 1: new_doc.add_paragraph(' ')
@@ -221,46 +245,23 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
                         p.getparent().remove(p)
                         paragraph._p = paragraph._element = None
         return all_cells_text
-
-    def adding_picture(name):
-        with Image.open(Path("Documents") / str(text[0][name])) as img:
-            width, height = img.size
-            img.save(Path("Documents") / str(text[0][name]) , dpi=(800, 800), optimize=True, quality=100)
-        if width > 700:
-            new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/4.25), height = Mm(height/4.25))
-        else:
-            new_doc.add_picture(os.path.join("Documents", str(text[0][name])), width = Mm(width/3.5), height = Mm(height/3.5))
-        new_doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        os.remove(Path("Documents") / str(text[0][name]))
-
-    def adding_footnotes(name):
-        with open(os.path.join("Documents", str(name[:name.find('.docx')]) + '.txt' ), 'r', encoding = 'utf8') as file:
-            f = file.readlines()
-            footnotes, summa = {}, 0
-            for word in range(len(f)):
-                if f[word].find('footnote') != -1:
-                    summa += 1
-                    footnotes[summa] = f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')]
-                    find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
-        os.remove(os.path.join("Documents", str(name[:name.find('.docx')]) + '.txt' ))
-        return footnotes
     
-    def adding_headers_and_footers(up, down):
+    def adding_headers_and_footers(self, up, down):
         if len(up) > 0:
             header = new_doc.sections[0].header
             header_para = header.add_paragraph('')
             run = header_para.add_run(str(up[0]))
             run.italic = True
-            run.font.size = Pt(pt)
+            run.font.size = Pt(self.pt)
             header_para.alignment=WD_ALIGN_PARAGRAPH.CENTER
         if len(down) > 0:
             footer = new_doc.sections[0].footer
             footer_para = footer.paragraphs[0]
             footer_para.text = str(down[0]) + '\n\n'
             footer_para.runs[0].italic = True
-            footer_para.runs[0].font.size = Pt(pt)
-    
-    def add_page_number(paragraph):
+            footer_para.runs[0].font.size = Pt(self.pt)
+
+    def add_page_number(self, paragraph):
 
         def create_attribute(element, name, value):
             element.set(ns.qn(name), value)
@@ -278,66 +279,6 @@ def new_document(pt = 14, line_spacing = 1.15, font_name = 'Times New Roman', le
         page_num_run._r.append(instrText)
         page_num_run._r.append(fldChar2)
 
-    text = adding_margins(str(filename))
-    if text[2]: 
-        docxFilename = os.path.join("Documents", str(filename) ) 
-        pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = os.path.join("Documents", str(filename[:filename.find('.docx')]) + '.txt'))
-        # Codecs: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
-        # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
-        # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
-        # markdown_mmd, markdown_phpextra, markdown_strict, markua, mediawiki, ms, muse, native, odt, opendocument, opml, 
-        # org, pdf, plain, pptx, revealjs, rst, rtf, s5, slideous, slidy, tei, texinfo, textile, xwiki, zimwiki
-        footnotes = adding_footnotes(filename)
-    my_doc = docx2txt.process(Path("Documents") / str(filename),directory).split('\n')
-    new_doc = docx.Document()
-    new_doc.sections[0].orientation = WD_ORIENT.PORTRAIT
-    new_doc.sections[0].left_margin = Mm(left_margin)
-    new_doc.sections[0].right_margin = Mm(right_margin)
-    new_doc.sections[0].top_margin = Mm(top_margin)
-    new_doc.sections[0].bottom_margin = Mm(bottom_margin)
-    new_doc.styles['Normal'].font.name = font_name
-    new_doc.styles['Normal'].font.size = Pt(pt)
-    headings = [1 if type(text[0][j]) is not list and len(text[0][j].split()) <= 10 and text[0][j] != '' and text[0][j].find('\t') == -1  else 0 for j in range(len(text[0]))]
-    pictures, summa, tables_text, table_num = [1 if type(text[0][phrase]) is not list and text[0][phrase].find('.png') != -1 else 0 for phrase in range(len(text[0]))], 0, [], 0
-    tables = [1 if type(text[0][j]) is list else 0 for j in range(len(text[0]))]
-    tables.append(0)
-    for phrase in range(len(text[0])):
-        if type(text[0][phrase]) is list: 
-            tables_text.extend(adding_table(text[0], phrase, pt))
-            table_num += 1
-        elif text[0][phrase].find('.png') != -1: adding_picture(phrase)
-        elif text[0][phrase].find('\t') != -1: 
-            paragrahp = adding_list(phrase)
-            if text[1][phrase]:
-                summa += 1
-                #fghjk
-                run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
-                run.bold = True
-                run.font.size = Pt(10)
-        elif len(text[0][phrase].split()) <= 10: adding_heading(phrase)
-        else: 
-            paragrahp = adding_paragraph(phrase)
-            if text[1][phrase]:
-                summa += 1
-                run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
-                run.bold = True
-                run.font.size = Pt(10)
-    upper_header_list, lower_header_list, header_flag = [], [], False
-    for split in my_doc:
-        if split != '':
-            if split == text[0][0]:break
-            else: upper_header_list.append(split)
-    for split in my_doc:
-        if split != '':
-            if split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text: 
-                lower_header_list.append(split)
-    if len(upper_header_list) > 0 or len(lower_header_list) > 0: header_flag = True
-    if header_flag: adding_headers_and_footers(upper_header_list, lower_header_list)
-    add_page_number(new_doc.sections[0].footer.paragraphs[0])
-    save_name = Path("New Documents") / str(filename)
-    new_doc.save(save_name)
-
-#gvfhndmf
 def delete_files():
     directory = Path("New Documents")
     if os.path.isdir("New Documents"):
@@ -353,9 +294,64 @@ for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     if os.path.isfile(f) and filename.endswith('.docx'): 
         files.append(filename[: filename.find('.docx')])
-        new_document(14, 1.15, 'Times New Roman', 30, 15, 20, 20)
+        new_documents = new_document(filename, 14, 1.15, 'Times New Roman', 30, 15, 20, 20)
+        text = new_documents.adding_margins()
+        if text[2]: 
+            docxFilename = os.path.join("Documents", str(filename) ) 
+            pypandoc.convert_file(docxFilename, to = 'asciidoc', outputfile = os.path.join("Documents", str(filename[:filename.find('.docx')]) + '.txt'))
+            # Codecs: asciidoc, asciidoctor, beamer, biblatex, bibtex, commonmark, commonmark_x, context, csljson, docbook, 
+            # docbook4, docbook5, docx, dokuwiki, dzslides, epub, epub2, epub3, fb2, gfm, haddock, html, html4, html5, icml, ipynb, 
+            # jats, jats_archiving, jats_articleauthoring, jats_publishing, jira, json, latex, man, markdown, markdown_github, 
+            # markdown_mmd, markdown_phpextra, markdown_strict, markua, mediawiki, ms, muse, native, odt, opendocument, opml, 
+            # org, pdf, plain, pptx, revealjs, rst, rtf, s5, slideous, slidy, tei, texinfo, textile, xwiki, zimwiki
+            footnotes = new_documents.adding_footnotes()
+        my_doc = docx2txt.process(Path("Documents") / str(filename),directory).split('\n')
+        new_doc = docx.Document()
+        new_doc.sections[0].orientation = WD_ORIENT.PORTRAIT
+        new_doc.sections[0].left_margin = Mm(new_documents.left_margin)
+        new_doc.sections[0].right_margin = Mm(new_documents.right_margin)
+        new_doc.sections[0].top_margin = Mm(new_documents.top_margin)
+        new_doc.sections[0].bottom_margin = Mm(new_documents.bottom_margin)
+        new_doc.styles['Normal'].font.name = new_documents.font_name
+        new_doc.styles['Normal'].font.size = Pt(new_documents.pt)
+        headings = [1 if type(text[0][j]) is not list and len(text[0][j].split()) <= 10 and text[0][j] != '' and text[0][j].find('\t') == -1  else 0 for j in range(len(text[0]))]
+        pictures, summa, tables_text, table_num = [1 if type(text[0][phrase]) is not list and text[0][phrase].find('.png') != -1 else 0 for phrase in range(len(text[0]))], 0, [], 0
+        tables = [1 if type(text[0][j]) is list else 0 for j in range(len(text[0]))]
+        tables.append(0)
+        for phrase in range(len(text[0])):
+            if type(text[0][phrase]) is list: 
+                tables_text.extend(new_documents.adding_table(text[0], phrase))
+                table_num += 1
+            elif text[0][phrase].find('.png') != -1: new_documents.adding_picture(phrase)
+            elif text[0][phrase].find('\t') != -1: 
+                paragrahp = new_documents.adding_list(phrase)
+                if text[1][phrase]:
+                    summa += 1
+                    run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
+                    run.bold = True
+                    run.font.size = Pt(10)
+            elif len(text[0][phrase].split()) <= 10: new_documents.adding_heading(phrase)
+            else: 
+                paragrahp = new_documents.adding_paragraph(phrase)
+                if text[1][phrase]:
+                    summa += 1
+                    run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
+                    run.bold = True
+                    run.font.size = Pt(10)
+        upper_header_list, lower_header_list, header_flag = [], [], False
+        for split in my_doc:
+            if split != '':
+                if split == text[0][0]:break
+                else: upper_header_list.append(split)
+        for split in my_doc:
+            if split != '':
+                if split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text: lower_header_list.append(split)
+        if len(upper_header_list) > 0 or len(lower_header_list) > 0: header_flag = True
+        if header_flag: new_documents.adding_headers_and_footers(upper_header_list, lower_header_list)
+        new_documents.add_page_number(new_doc.sections[0].footer.paragraphs[0])
+        save_name = Path("New Documents") / str(filename)
+        new_doc.save(save_name)
 
-#ghjkhgnjm
 end_time = time.time()
 print(end_time - start_time)
 
