@@ -32,7 +32,7 @@ class new_document:
                     pass
 
     def adding_margins(self):
-        text, foot_flag, num_footnotes, header_text, table_word = [], False, [], [], []
+        text, num_footnotes, header_text, table_word, hyperlinks_text, foot_flag = [], [], [], [], [], False
         document = docx2python(Path("Documents") / str(self.filename))
         for obj in document.body:
             if len(obj) > 1 and len(obj[0][0]) == 1:
@@ -45,6 +45,9 @@ class new_document:
             elif len(obj) == 1 and len(obj[0][0]) >= 1:
                 for line in range(len(obj[0][0])):
                     if obj[0][0][line] != '':
+                        if obj[0][0][line].find('</a>') != -1: hyperlinks_text.append(obj[0][0][line][: obj[0][0][line].index('<a')] + 
+                                                                                      obj[0][0][line][obj[0][0][line].index('">') + 2 : obj[0][0][line].index('</a>')] + 
+                                                                                      obj[0][0][line][obj[0][0][line].index('</a>') + 4 :])
                         if obj[0][0][line].find('.png') != -1:
                             text.append(obj[0][0][line][obj[0][0][line].find('media') + 6 :][: obj[0][0][line][obj[0][0][line].find('media') + 6 :].find('----')])
                             header_text.append(obj[0][0][line][obj[0][0][line].find('media') + 6 :][: obj[0][0][line][obj[0][0][line].find('media') + 6 :].find('----')])
@@ -68,11 +71,6 @@ class new_document:
                                 header_text.append(obj[0][0][line][obj[0][0][line].find('--\t') + 3 :])
                                 num_footnotes.append(0)
                                 continue
-                            if len(phrase) == 0: 
-                                text.append(obj[0][0][line])
-                                header_text.append(obj[0][0][line])
-                                num_footnotes.append(0)
-                                continue
                             if len(obj[0][0][line].split()) <= 10: 
                                 text.append(obj[0][0][line].capitalize())
                                 header_text.append(obj[0][0][line].capitalize())
@@ -85,7 +83,7 @@ class new_document:
                             phrase = ''.join(phrase)
                             text.append(phrase)
                             num_footnotes.append(0)
-        return text, num_footnotes, foot_flag, header_text, table_word
+        return text, num_footnotes, foot_flag, header_text, table_word, hyperlinks_text
     
     def adding_footnotes(self):
         with open(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt' ), 'r', encoding = 'utf8') as file:
@@ -93,9 +91,23 @@ class new_document:
             footnotes, summa = {}, 0
             for word in range(len(f)):
                 if f[word].find('footnote') != -1:
+                    if f[word].find(']') != -1:  notes = f[word][f[word].index('[') + 1 : f[word].index(']')]
+                    else: 
+                        notes = f[word][f[word].index('[') + 1 : f[word].index('\n')] + ' '
+                        for note in range(word + 1, len(f)):
+                            if f[note].find(']') == -1: notes += f[note][: f[note].index('\n')]  + ' '
+                            else: 
+                                notes += f[note][: f[note].index('\n')]
+                    print(notes)
                     summa += 1
-                    footnotes[summa] = f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')]
-                    self.find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
+                    hyper_footnotes, t = {}, ''
+                    if notes.find('https') != -1:
+                        url = notes[notes.index('https') : notes.index('[') - 1]
+                        t = notes[notes.index('[') : notes.index(']')]
+                    #     hyper_footnotes[hyper_summa] = [t, url]
+                    #     hyper_summa += 1
+                    footnotes[summa] = notes + t
+                    # self.find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
         os.remove(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt' ))
         return footnotes
     
@@ -158,7 +170,9 @@ class new_document:
         if text[0][name].find('-\t') != -1: 
             self.find_words(text[0][name][text[0][name].find('\t') + 1 :].split())
             paragrahp = new_doc.add_paragraph(text[0][name][text[0][name].find('\t') + 1 :], style = 'List Bullet')
-        else: paragrahp = new_doc.add_paragraph(text[0][name][text[name].find('\t') + 1 :], style = 'List Number')
+        else: 
+            self.find_words(text[0][name][text[0][name].find('\t') + 1 :].split())
+            paragrahp = new_doc.add_paragraph(text[0][name][text[name].find('\t') + 1 :], style = 'List Number')
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p_fmt.line_spacing = self.line_spacing
@@ -260,7 +274,7 @@ class new_document:
             footer_para.text = str(down[0]) + '\n\n'
             footer_para.runs[0].italic = True
             footer_para.runs[0].font.size = Pt(self.pt)
-
+    
     def add_page_number(self, paragraph):
 
         def create_attribute(element, name, value):
@@ -278,6 +292,62 @@ class new_document:
         page_num_run._r.append(fldChar1)
         page_num_run._r.append(instrText)
         page_num_run._r.append(fldChar2)
+
+    def adding_hyperlink(self, paragraph, color, underline):
+        url = paragraph.text[paragraph.text.index('https') : paragraph.text.index('>') - 1]
+        t = paragraph.text[paragraph.text.index('">') + 2 : paragraph.text.index('</a>')]
+        if list_flag_num or list_flag_bul: ph_1= paragraph.text[paragraph.text.find('\t') + 1 : paragraph.text.index('<a')]
+        else: ph_1 = paragraph.text[: paragraph.text.index('<a')]
+        ph_2 = paragraph.text[paragraph.text.index('</a>') + 4 :]
+        p = paragraph._element
+        p.getparent().remove(p)
+        paragraph._p = paragraph._element = None
+        if list_flag_num: paragraph = new_doc.add_paragraph('', style = 'List Number')
+        elif list_flag_bul: paragraph = new_doc.add_paragraph('', style = 'List Bullet')
+        else: paragraph = new_doc.add_paragraph('')
+        p_fmt = paragraph.paragraph_format
+        if italic_flag:
+            run = paragraph.add_run(ph_1)
+            run.italic = True
+            run.font.size = Pt(self.pt - 2)
+            p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        else: 
+            paragraph.add_run(ph_1)
+            p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_fmt.line_spacing = self.line_spacing
+        p_fmt.space_before = Pt(self.line_spacing)
+        p_fmt.space_after = Pt(self.line_spacing)
+        part = paragraph.part
+        r_id = part.relate_to(url, docx.opc.constants.RELATIONSHIP_TYPE.HYPERLINK, is_external=True)
+        hyperlink = docx.oxml.shared.OxmlElement('w:hyperlink')
+        hyperlink.set(docx.oxml.shared.qn('r:id'), r_id, )
+        new_run = docx.oxml.shared.OxmlElement('w:r')
+        rPr = docx.oxml.shared.OxmlElement('w:rPr')
+        if not color is None:
+            c = docx.oxml.shared.OxmlElement('w:color')
+            c.set(docx.oxml.shared.qn('w:val'), color)
+            rPr.append(c)
+        new_run.append(rPr)
+        new_run.text = t
+        hyperlink.append(new_run)
+        run = paragraph.add_run ()
+        run._r.append (hyperlink)
+        if italic_flag: 
+            run.italic = True
+            run.font.size = Pt(self.pt - 2)
+        run.font.underline = underline
+        if italic_flag:
+            run = paragraph.add_run(ph_2)
+            run.italic = True
+            run.font.size = Pt(self.pt - 2)
+            p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        else:
+            paragraph.add_run(ph_2)
+            p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p_fmt.line_spacing = self.line_spacing
+        p_fmt.space_before = Pt(self.line_spacing)
+        p_fmt.space_after = Pt(self.line_spacing)
+        return hyperlink
 
 def delete_files():
     directory = Path("New Documents")
@@ -315,16 +385,22 @@ for filename in os.listdir(directory):
         new_doc.styles['Normal'].font.name = new_documents.font_name
         new_doc.styles['Normal'].font.size = Pt(new_documents.pt)
         headings = [1 if type(text[0][j]) is not list and len(text[0][j].split()) <= 10 and text[0][j] != '' and text[0][j].find('\t') == -1  else 0 for j in range(len(text[0]))]
-        pictures, summa, tables_text, table_num = [1 if type(text[0][phrase]) is not list and text[0][phrase].find('.png') != -1 else 0 for phrase in range(len(text[0]))], 0, [], 0
+        pictures, tables_text, summa, table_num = [1 if type(text[0][phrase]) is not list and text[0][phrase].find('.png') != -1 else 0 for phrase in range(len(text[0]))], [], 0, 0
         tables = [1 if type(text[0][j]) is list else 0 for j in range(len(text[0]))]
         tables.append(0)
         for phrase in range(len(text[0])):
+            list_flag_num, list_flag_bul, italic_flag, bold_flag = False, False, False, False
             if type(text[0][phrase]) is list: 
                 tables_text.extend(new_documents.adding_table(text[0], phrase))
                 table_num += 1
             elif text[0][phrase].find('.png') != -1: new_documents.adding_picture(phrase)
             elif text[0][phrase].find('\t') != -1: 
-                paragrahp = new_documents.adding_list(phrase)
+                if text[0][phrase].find('</a>') != -1:
+                    if text[0][phrase].find('-\t') != -1: list_flag_bul = True
+                    else: list_flag_num = True
+                    paragrahp = new_doc.add_paragraph(text[0][phrase]) 
+                    new_documents.adding_hyperlink(paragrahp, '5177dd', True)
+                else: paragrahp = new_documents.adding_list(phrase)
                 if text[1][phrase]:
                     summa += 1
                     run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
@@ -332,10 +408,14 @@ for filename in os.listdir(directory):
                     run.font.size = Pt(10)
             elif len(text[0][phrase].split()) <= 10: new_documents.adding_heading(phrase)
             else: 
-                paragrahp = new_documents.adding_paragraph(phrase)
+                if tables[phrase + 1] == 1 or pictures[phrase - 1] == 1 and text[0][phrase] != ' ': italic_flag = True
+                if text[0][phrase].find('</a>') != -1: 
+                    paragraph = new_documents.adding_paragraph(phrase)
+                    new_documents.adding_hyperlink(paragraph, '5177dd', True)
+                else: paragraph = new_documents.adding_paragraph(phrase)
                 if text[1][phrase]:
                     summa += 1
-                    run = paragrahp.add_run(' [' + str(footnotes[summa]) + ']')
+                    run = paragraph.add_run(' [' + str(footnotes[summa]) + ']')
                     run.bold = True
                     run.font.size = Pt(10)
         upper_header_list, lower_header_list, header_flag = [], [], False
@@ -345,7 +425,8 @@ for filename in os.listdir(directory):
                 else: upper_header_list.append(split)
         for split in my_doc:
             if split != '':
-                if split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text: lower_header_list.append(split)
+                if split not in text[-3] and split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text : 
+                    lower_header_list.append(split)
         if len(upper_header_list) > 0 or len(lower_header_list) > 0: header_flag = True
         if header_flag: new_documents.adding_headers_and_footers(upper_header_list, lower_header_list)
         new_documents.add_page_number(new_doc.sections[0].footer.paragraphs[0])
