@@ -286,8 +286,8 @@ def delete_files():
             f = os.path.join(directory, filename)
             if os.path.isfile(f) and filename.endswith('.docx'): os.remove(f)
 
-directory, files = Path("Documents"), []
 delete_files()
+directory, files = Path("Documents"), []
 if not os.path.isdir("New Documents"): os.mkdir("New Documents")
 assert len(os.listdir(directory)) > 0, 'Download files in the folder'
 for filename in os.listdir(directory):
@@ -354,4 +354,3 @@ for filename in os.listdir(directory):
 
 end_time = time.time()
 print(end_time - start_time)
-
