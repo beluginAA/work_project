@@ -6,6 +6,7 @@ import pypandoc
 import os
 import time
 import numpy as np
+import main_settings
 from PIL import Image
 from pathlib import Path
 from docx.oxml import OxmlElement, ns
@@ -20,8 +21,16 @@ start_time = time.time()
 
 class new_document:
 
-    def __init__(self, filename, pt, line_spacing, font_name,
-                 left_margin, right_margin, top_margin, bottom_margin):
+    def __init__(
+            self,
+            filename,
+            pt,
+            line_spacing,
+            font_name,
+            left_margin,
+            right_margin,
+            top_margin,
+            bottom_margin):
         self.filename = filename
         self.pt, self.line_spacing, self.font_name, self.left_margin = pt, line_spacing, font_name, left_margin
         self.right_margin, self.top_margin, self.bottom_margin = right_margin, top_margin, bottom_margin
@@ -111,14 +120,13 @@ class new_document:
                             text.append(phrase)
                             num_footnotes.append(0)
         for my in text:
-            my = my.split()
-            table_word.append(' '.join(my))
+            table_word.append(' '.join(my.split()))
         return text, num_footnotes, foot_flag, header_text, table_word, hyperlinks_text
 
     def adding_footnotes(self):
         with open(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt'), 'r', encoding='utf8') as file:
             f = file.readlines()
-            footnotes, summa = {}, 0
+            note = []
             for word in range(len(f)):
                 sp, summa_end = word, 0
                 if f[word].find('footnote') != -1:
@@ -149,9 +157,9 @@ class new_document:
                         if word == len(f):
                             break
                     word = sp
-                    summa += 1
-                    footnotes[summa] = notes
+                    note.append(notes)
                     # self.find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
+            footnotes = dict((number, par) for number, par in enumerate(note))
         os.remove(os.path.join("Documents", str(
             self.filename[:self.filename.find('.docx')]) + '.txt'))
         return footnotes
@@ -487,7 +495,14 @@ for filename in os.listdir(directory):
     if os.path.isfile(f) and filename.endswith('.docx'):
         files.append(filename[: filename.find('.docx')])
         new_documents = new_document(
-            filename, 14, 1.15, 'Times New Roman', 30, 15, 20, 20)
+            filename,
+            main_settings.pt,
+            main_settings.line_spacing,
+            main_settings.font_name,
+            main_settings.left_margin,
+            main_settings.right_margin,
+            main_settings.top_margin,
+            main_settings.bottom_margin)
         text = new_documents.adding_margins()
         if text[2]:
             docxFilename = os.path.join("Documents", str(filename))
@@ -538,20 +553,20 @@ for filename in os.listdir(directory):
                         list_flag_num = True
                     paragrahp = new_doc.add_paragraph(text[0][phrase])
                     hyperlink = new_documents.adding_hyperlink(
-                        paragrahp, '5177dd', True)
+                        paragrahp, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     hyper_text.append(' '.join(hyperlink[-1].split()))
                 else:
                     paragrahp = new_documents.adding_list(phrase)
                 if text[1][phrase]:
-                    summa += 1
                     if footnotes[summa].find('https') != -1:
                         new_documents.adding_hyperlink_in_footers(
-                            paragrahp, '5177dd', True)
+                            paragrahp, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     else:
                         run = paragrahp.add_run(
                             ' [' + str(footnotes[summa]) + ']')
                         run.bold = True
                         run.font.size = Pt(10)
+                    summa += 1
             elif len(text[0][phrase].split()) <= 10:
                 new_documents.adding_heading(phrase)
             else:
@@ -562,20 +577,20 @@ for filename in os.listdir(directory):
                 if text[0][phrase].find('</a>') != -1:
                     paragraph = new_documents.adding_paragraph(phrase)
                     hyperlink = new_documents.adding_hyperlink(
-                        paragraph, '5177dd', True)
+                        paragraph, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     hyper_text.append(' '.join(hyperlink[-1].split()))
                 else:
                     paragraph = new_documents.adding_paragraph(phrase)
                 if text[1][phrase]:
-                    summa += 1
                     if footnotes[summa].find('https') != -1:
                         new_documents.adding_hyperlink_in_footers(
-                            paragraph, '5177dd', True)
+                            paragraph, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     else:
                         run = paragraph.add_run(
                             ' [' + str(footnotes[summa]) + ']')
                         run.bold = True
                         run.font.size = Pt(10)
+                    summa += 1
         upper_header_list, lower_header_list, header_flag = [], [], False
         for split in my_doc:
             if split != '':
