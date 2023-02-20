@@ -7,6 +7,7 @@ import os
 import time
 import numpy as np
 import main_settings
+from threading import Thread
 from PIL import Image
 from pathlib import Path
 from docx.oxml import OxmlElement, ns
@@ -16,10 +17,23 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.section import WD_ORIENT
 
+# После логирования программа не выносит нижний колонтитул
+
 start_time = time.time()
 
+class LoggingCallback:
 
-class new_document:
+    def __init__(self):
+        self.text = []
+        self.header_text = [] 
+        self.num_footnotes = []
+    
+    def __call__(self, text, header_text, num_footnotes):
+        self.text.append(text)
+        self.header_text.append(header_text)
+        self.num_footnotes.append(num_footnotes)
+
+class NewDocument:
 
     def __init__(
             self,
@@ -43,36 +57,40 @@ class new_document:
                     pass
 
     def adding_margins(self):
-        text, num_footnotes, header_text, table_word, hyperlinks_text, foot_flag = [
-        ], [], [], [], [], False
+        table_word, hyperlinks_text, foot_flag = [], [], False
         document = docx2python(Path("Documents") / str(self.filename))
         for obj in document.body:
             if len(obj) > 1 and len(obj[0][0]) == 1:
-                numbers = [[obj[_][number][0] for number in range(
-                    len(obj[0]))] for _ in range(len(obj))]
-                text.append(numbers)
+                numbers = [
+                    [obj[_][number][0] for number in range(
+                    len(obj[0]))] for _ in range(len(obj))
+                ]
                 for main in numbers:
                     for letter in main:
                         table_word.append(letter)
-                header_text.append(numbers)
-                num_footnotes.append(0)
+                callback(numbers, numbers, 0)
             elif len(obj) == 1 and len(obj[0][0]) >= 1:
                 for line in range(len(obj[0][0])):
                     if obj[0][0][line] != '':
                         if obj[0][0][line].find('</a>') != -1:
-                            hyperlinks_text.append(obj[0][0][line][: obj[0][0][line].index('<a')] +
-                                                   obj[0][0][line][obj[0][0][line].index('">') + 2: obj[0][0][line].index('</a>')] +
-                                                   obj[0][0][line][obj[0][0][line].index('</a>') + 4:])
+                            hyperlinks_text.append(
+                                obj[0][0][line][: obj[0][0][line].index('<a')] +
+                                obj[0][0][line][obj[0][0][line].index('">') + 2: obj[0][0][line].index('</a>')] +
+                                obj[0][0][line][obj[0][0][line].index('</a>') + 4:]
+                            )
                         if obj[0][0][line].find('.png') != -1:
-                            text.append(obj[0][0][line][obj[0][0][line].find(
-                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')])
-                            header_text.append(obj[0][0][line][obj[0][0][line].find(
-                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')])
-                            num_footnotes.append(0)
+                            callback(
+                                obj[0][0][line][obj[0][0][line].find(
+                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')],
+                                obj[0][0][line][obj[0][0][line].find(
+                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')], 0
+                            )
                         elif obj[0][0][line].find('footnote') != -1:
                             if obj[0][0][line].find('\t') != -1:
-                                phrase = list(obj[0][0][line][obj[0][0][line].find(
-                                    '\t') + 1: obj[0][0][line].find('----')])
+                                phrase = list(
+                                    obj[0][0][line][obj[0][0][line].find(
+                                    '\t') + 1: obj[0][0][line].find('----')]
+                                )
                             else:
                                 phrase = list(
                                     obj[0][0][line][: obj[0][0][line].find('----')])
@@ -88,25 +106,17 @@ class new_document:
                                 for _ in range(12):
                                     phrase = np.insert(phrase, 0, ' ')
                             phrase = ''.join(phrase)
-                            text.append(phrase)
-                            header_text.append(phrase)
-                            num_footnotes.append(1)
+                            callback(phrase, phrase, 1)
                             foot_flag = True
                         else:
-                            header_text.append(obj[0][0][line])
                             phrase = list(obj[0][0][line])
                             if obj[0][0][line].find('\t') != -1:
-                                text.append(
-                                    obj[0][0][line][obj[0][0][line].find('--\t') + 1:])
-                                header_text.append(
-                                    obj[0][0][line][obj[0][0][line].find('--\t') + 3:])
-                                num_footnotes.append(0)
+                                callback(obj[0][0][line][obj[0][0][line].find('--\t') + 1:], 
+                                    obj[0][0][line][obj[0][0][line].find('--\t') + 3:],
+                                    0)
                                 continue
                             if len(obj[0][0][line].split()) <= 10:
-                                text.append(obj[0][0][line].capitalize())
-                                header_text.append(
-                                    obj[0][0][line].capitalize())
-                                num_footnotes.append(0)
+                                callback(obj[0][0][line].capitalize(), obj[0][0][line].capitalize(), 0)
                                 continue
                             while True:
                                 if phrase[0].isalpha():
@@ -117,11 +127,10 @@ class new_document:
                             for _ in range(12):
                                 phrase = np.insert(phrase, 0, ' ')
                             phrase = ''.join(phrase)
-                            text.append(phrase)
-                            num_footnotes.append(0)
-        for my in text:
+                            callback(phrase, obj[0][0][line], 0)
+        for my in callback.text:
             table_word.append(' '.join(my.split()))
-        return text, num_footnotes, foot_flag, header_text, table_word, hyperlinks_text
+        return foot_flag, table_word, hyperlinks_text
 
     def adding_footnotes(self):
         with open(os.path.join("Documents", str(self.filename[:self.filename.find('.docx')]) + '.txt'), 'r', encoding='utf8') as file:
@@ -158,14 +167,13 @@ class new_document:
                             break
                     word = sp
                     note.append(notes)
-                    # self.find_words(f[word][f[word].find('footnote') + 10 :][: f[word][f[word].find('footnote') + 10 :].find(']')].split())
             footnotes = dict((number, par) for number, par in enumerate(note))
         os.remove(os.path.join("Documents", str(
             self.filename[:self.filename.find('.docx')]) + '.txt'))
         return footnotes
 
     def adding_heading(self, name):
-        if text[0][name] == '' and headings[name -
+        if callback.text[name] == '' and headings[name -
                                             1] == 0 and name + 1 <= len(headings):
             try:
                 headings[name + 1] == 0
@@ -173,11 +181,11 @@ class new_document:
                 return
             else:
                 return
-        if headings[name] and text[0][name - 1] != '' and name != 0:
+        if headings[name] and callback.text[name - 1] != '' and name != 0:
             paragrahp = new_doc.add_paragraph('')
         paragrahp = new_doc.add_paragraph('')
-        self.find_words(text[0][name].split())
-        run = paragrahp.add_run(text[0][name])
+        self.find_words(callback.text[name].split())
+        run = paragrahp.add_run(callback.text[name])
         run.bold = True
         run.font.size = Pt(self.pt + 2)
         p_fmt = paragrahp.paragraph_format
@@ -190,24 +198,24 @@ class new_document:
         if name != 0:
             if tables[name + 1] == 1:
                 new_doc.add_paragraph(' ')
-                self.find_words(text[0][name].split())
+                self.find_words(callback.text[name].split())
                 paragrahp = new_doc.add_paragraph('')
-                run = paragrahp.add_run(text[0][name])
+                run = paragrahp.add_run(callback.text[name])
                 run.italic = True
                 run.font.size = Pt(self.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            elif pictures[name - 1] == 1 and text[0][name] != ' ':
-                self.find_words(text[0][name].split())
+            elif pictures[name - 1] == 1 and callback.text[name] != ' ':
+                self.find_words(callback.text[name].split())
                 paragrahp = new_doc.add_paragraph('')
-                run = paragrahp.add_run(text[0][name])
+                run = paragrahp.add_run(callback.text[name])
                 run.italic = True
                 run.font.size = Pt(self.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             else:
-                self.find_words(text[0][name].split())
-                paragrahp = new_doc.add_paragraph(text[0][name])
+                self.find_words(callback.text[name].split())
+                paragrahp = new_doc.add_paragraph(callback.text[name])
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             p_fmt.line_spacing = self.line_spacing
@@ -216,30 +224,30 @@ class new_document:
         return paragrahp
 
     def adding_picture(self, name):
-        with Image.open(Path("Documents") / str(text[0][name])) as img:
+        with Image.open(Path("Documents") / str(callback.text[name])) as img:
             width, height = img.size
             img.save(Path("Documents") /
-                     str(text[0][name]), dpi=(800, 800), optimize=True, quality=100)
+                     str(callback.text[name]), dpi=(800, 800), optimize=True, quality=100)
         if width > 700:
             new_doc.add_picture(os.path.join("Documents", str(
-                text[0][name])), width=Mm(width / 4.25), height=Mm(height / 4.25))
+                callback.text[name])), width=Mm(width / 4.25), height=Mm(height / 4.25))
         else:
             new_doc.add_picture(os.path.join("Documents", str(
-                text[0][name])), width=Mm(width / 3.5), height=Mm(height / 3.5))
+                callback.text[name])), width=Mm(width / 3.5), height=Mm(height / 3.5))
         new_doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        os.remove(Path("Documents") / str(text[0][name]))
+        os.remove(Path("Documents") / str(callback.text[name]))
 
     def adding_list(self, name):
-        if text[0][name].find('-\t') != -1:
+        if callback.text[name].find('-\t') != -1:
             self.find_words(
-                text[0][name][text[0][name].find('\t') + 1:].split())
+                callback.text[name][callback.text[name].find('\t') + 1:].split())
             paragrahp = new_doc.add_paragraph(
-                text[0][name][text[0][name].find('\t') + 1:], style='List Bullet')
+                callback.text[name][callback.text[name].find('\t') + 1:], style='List Bullet')
         else:
             self.find_words(
-                text[0][name][text[0][name].find('\t') + 1:].split())
+                callback.text[name][callback.text[name].find('\t') + 1:].split())
             paragrahp = new_doc.add_paragraph(
-                text[0][name][text[name].find('\t') + 1:], style='List Number')
+                callback.text[name][callback.text[name].find('\t') + 1:], style='List Number')
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
         p_fmt.line_spacing = self.line_spacing
@@ -249,8 +257,7 @@ class new_document:
 
     def adding_table(self, txt, name):
         doc = docx.Document(Path("Documents") / str(self.filename))
-        unique, merged, max_row, max_col, added, cells_text, all_cells_text = [
-        ], [], np.array([]), np.array([]), [], [], []
+        unique, merged, max_row, max_col, added, cells_text, all_cells_text = [], [], np.array([]), np.array([]), [], [], []
         for row in doc.tables[table_num].rows:
             info = []
             for cell in row.cells:
@@ -487,15 +494,15 @@ def delete_files():
 
 delete_files()
 directory, files = os.path.abspath("Documents"), []
+assert len(os.listdir(directory)) > 0, 'Download files in the folder'
 if not os.path.isdir("New Documents"):
     os.mkdir("New Documents")
-assert len(os.listdir(directory)) > 0, 'Download files in the folder'
 for filename in os.listdir(directory):
     f = os.path.join(directory, filename)
     if os.path.isfile(f) and filename.endswith('.docx'):
+        callback = LoggingCallback()
         files.append(filename[: filename.find('.docx')])
-        new_documents = new_document(
-            filename,
+        new_documents = NewDocument(filename,
             main_settings.pt,
             main_settings.line_spacing,
             main_settings.font_name,
@@ -504,7 +511,7 @@ for filename in os.listdir(directory):
             main_settings.top_margin,
             main_settings.bottom_margin)
         text = new_documents.adding_margins()
-        if text[2]:
+        if text[0]:
             docxFilename = os.path.join("Documents", str(filename))
             pypandoc.convert_file(docxFilename, to='asciidoc', outputfile=os.path.join(
                 "Documents", str(filename[:filename.find('.docx')]) + '.txt'))
@@ -526,38 +533,36 @@ for filename in os.listdir(directory):
         new_doc.styles['Normal'].font.size = Pt(new_documents.pt)
         headings = [
             1 if not isinstance(
-                text[0][j],
+                callback.text[j],
                 list) and len(
-                text[0][j].split()) <= 10 and text[0][j] != '' and text[0][j].find('\t') == -
-            1 else 0 for j in range(
-                len(
-                    text[0]))]
-        pictures, tables_text, summa, table_num = [1 if not isinstance(text[0][phrase], list) and text[0][phrase].find(
-            '.png') != -1 else 0 for phrase in range(len(text[0]))], [], 0, 0
+                callback.text[j].split()) <= 10 and callback.text[j] != '' and callback.text[j].find('\t') == -
+            1 else 0 for j in range(len(callback.text))]
+        pictures, tables_text, summa, table_num = [1 if not isinstance(callback.text[phrase], list) and callback.text[phrase].find(
+            '.png') != -1 else 0 for phrase in range(len(callback.text))], [], 0, 0
         tables, hyper_text = [1 if isinstance(
-            text[0][j], list) else 0 for j in range(len(text[0]))], []
+            callback.text[j], list) else 0 for j in range(len(callback.text))], []
         tables.append(0)
-        for phrase in range(len(text[0])):
+        for phrase in range(len(callback.text)):
             list_flag_num, list_flag_bul, italic_flag, bold_flag = False, False, False, False
-            if isinstance(text[0][phrase], list):
-                tables_text.extend(new_documents.adding_table(text[0], phrase))
+            if isinstance(callback.text[phrase], list):
+                tables_text.extend(new_documents.adding_table(callback.text, phrase))
                 table_num += 1
-            elif text[0][phrase].find('.png') != -1:
+            elif callback.text[phrase].find('.png') != -1:
                 new_documents.adding_picture(phrase)
-            elif text[0][phrase].find('\t') != -1:
-                tables_text.append(' '.join(text[0][phrase][2:].split()))
-                if text[0][phrase].find('</a>') != -1:
-                    if text[0][phrase].find('-\t') != -1:
+            elif callback.text[phrase].find('\t') != -1:
+                tables_text.append(' '.join(callback.text[phrase][2:].split()))
+                if callback.text[phrase].find('</a>') != -1:
+                    if callback.text[phrase].find('-\t') != -1:
                         list_flag_bul = True
                     else:
                         list_flag_num = True
-                    paragrahp = new_doc.add_paragraph(text[0][phrase])
+                    paragrahp = new_doc.add_paragraph(callback.text[phrase])
                     hyperlink = new_documents.adding_hyperlink(
                         paragrahp, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     hyper_text.append(' '.join(hyperlink[-1].split()))
                 else:
                     paragrahp = new_documents.adding_list(phrase)
-                if text[1][phrase]:
+                if callback.num_footnotes[phrase]:
                     if footnotes[summa].find('https') != -1:
                         new_documents.adding_hyperlink_in_footers(
                             paragrahp, main_settings.hyperlink_color, main_settings.hyperlink_underline)
@@ -567,21 +572,21 @@ for filename in os.listdir(directory):
                         run.bold = True
                         run.font.size = Pt(10)
                     summa += 1
-            elif len(text[0][phrase].split()) <= 10:
+            elif len(callback.text[phrase].split()) <= 10:
                 new_documents.adding_heading(phrase)
             else:
                 if tables[phrase +
                           1] == 1 or pictures[phrase -
-                                              1] == 1 and text[0][phrase] != ' ':
+                                              1] == 1 and callback.text[phrase] != ' ':
                     italic_flag = True
-                if text[0][phrase].find('</a>') != -1:
+                if callback.text[phrase].find('</a>') != -1:
                     paragraph = new_documents.adding_paragraph(phrase)
                     hyperlink = new_documents.adding_hyperlink(
                         paragraph, main_settings.hyperlink_color, main_settings.hyperlink_underline)
                     hyper_text.append(' '.join(hyperlink[-1].split()))
                 else:
                     paragraph = new_documents.adding_paragraph(phrase)
-                if text[1][phrase]:
+                if callback.num_footnotes[phrase]:
                     if footnotes[summa].find('https') != -1:
                         new_documents.adding_hyperlink_in_footers(
                             paragraph, main_settings.hyperlink_color, main_settings.hyperlink_underline)
@@ -594,7 +599,7 @@ for filename in os.listdir(directory):
         upper_header_list, lower_header_list, header_flag = [], [], False
         for split in my_doc:
             if split != '':
-                if split == text[0][0]:
+                if split == callback.text:
                     break
                 else:
                     upper_header_list.append(split)
@@ -603,7 +608,7 @@ for filename in os.listdir(directory):
             if split != '':
                 if split.endswith(' '):
                     split = split[: - 2]
-                if split not in text[-3] and split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text and split not in text[0] and split not in hyper_text:
+                if split not in callback.header_text and split not in text[-2] and split not in text[-1] and split not in upper_header_list and split not in tables_text and split not in callback.text and split not in hyper_text:
                     lower_header_list.append(split)
         if len(upper_header_list) > 0 or len(lower_header_list) > 0:
             header_flag = True
