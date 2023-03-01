@@ -55,12 +55,20 @@ class NewDocument:
             for word in words:
                 if word.lower() == 'из':
                     pass
+    
+    @staticmethod
+    def flattenlist(nestedlist): 
+        if len(nestedlist) == 0: 
+            return nestedlist 
+        if isinstance(nestedlist[0], list): 
+            return NewDocument.flattenlist(nestedlist[0]) + NewDocument.flattenlist(nestedlist[1:]) 
+        return nestedlist[:1] + NewDocument.flattenlist(nestedlist[1:])        
 
     def adding_margins(self):
         table_word, hyperlinks_text, foot_flag = [], [], False
         document = docx2python(Path("Documents") / str(self.filename))
         for obj in document.body:
-            if len(obj) > 1 and len(obj[0][0]) == 1:
+            if len(obj) > 1 and len(obj[0][0]) == 1 and obj[0][0] != ['\t']:
                 numbers = [
                     [obj[_][number][0] for number in range(
                     len(obj[0]))] for _ in range(len(obj))
@@ -69,37 +77,38 @@ class NewDocument:
                     for letter in main:
                         table_word.append(letter)
                 callback(numbers, numbers, 0)
-            elif len(obj) == 1 and len(obj[0][0]) >= 1:
-                for line in range(len(obj[0][0])):
-                    if obj[0][0][line] != '':
-                        if obj[0][0][line].find('</a>') != -1:
+            else:
+                new_text = self.flattenlist(obj)
+                for line in range(len(new_text)):
+                    if new_text[line] != '':
+                        if new_text[line].find('</a>') != -1:
                             hyperlinks_text.append(
-                                obj[0][0][line][: obj[0][0][line].index('<a')] +
-                                obj[0][0][line][obj[0][0][line].index('">') + 2: obj[0][0][line].index('</a>')] +
-                                obj[0][0][line][obj[0][0][line].index('</a>') + 4:]
+                                new_text[line][: new_text[line].index('<a')] +
+                                new_text[line][new_text[line].index('">') + 2: new_text[line].index('</a>')] +
+                                new_text[line][new_text[line].index('</a>') + 4:]
                             )
-                        if obj[0][0][line].find('.png') != -1:
+                        if new_text[line].find('.png') != -1:
                             callback(
-                                obj[0][0][line][obj[0][0][line].find(
-                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')],
-                                obj[0][0][line][obj[0][0][line].find(
-                                'media') + 6:][: obj[0][0][line][obj[0][0][line].find('media') + 6:].find('----')], 0
+                                new_text[line][new_text[line].find(
+                                'media') + 6:][: new_text[line][new_text[line].find('media') + 6:].find('----')],
+                                new_text[line][new_text[line].find(
+                                'media') + 6:][: new_text[line][new_text[line].find('media') + 6:].find('----')], 0
                             )
-                        elif obj[0][0][line].find('footnote') != -1:
-                            if obj[0][0][line].find('\t') != -1:
+                        elif new_text[line].find('footnote') != -1:
+                            if new_text[line].find('\t') != -1:
                                 phrase = list(
-                                    obj[0][0][line][obj[0][0][line].find(
-                                    '\t') + 1: obj[0][0][line].find('----')]
+                                    new_text[line][new_text[line].find(
+                                    '\t') + 1: new_text[line].find('----')]
                                 )
                             else:
                                 phrase = list(
-                                    obj[0][0][line][: obj[0][0][line].find('----')])
+                                    new_text[line][:new_text[line].find('----')])
                             while True:
                                 if phrase[0].isalpha():
                                     break
                                 if phrase[0] == ' ':
                                     del phrase[0]
-                            if obj[0][0][line].find('\t') != -1:
+                            if new_text[line].find('\t') != -1:
                                 phrase = np.insert(phrase, 0, '\t')
                                 phrase = np.insert(phrase, 0, '-')
                             else:
@@ -109,14 +118,14 @@ class NewDocument:
                             callback(phrase, phrase, 1)
                             foot_flag = True
                         else:
-                            phrase = list(obj[0][0][line])
-                            if obj[0][0][line].find('\t') != -1:
-                                callback(obj[0][0][line][obj[0][0][line].find('--\t') + 1:], 
-                                    obj[0][0][line][obj[0][0][line].find('--\t') + 3:],
+                            phrase = list(new_text[line])
+                            if new_text[line].find('--\t') != -1 and new_text[line] != '\t':
+                                callback(new_text[line][new_text[line].find('--\t') + 1:], 
+                                    new_text[line][new_text[line].find('--\t') + 3:],
                                     0)
                                 continue
-                            if len(obj[0][0][line].split()) <= 10:
-                                callback(obj[0][0][line].capitalize(), obj[0][0][line].capitalize(), 0)
+                            if len(new_text[line].split()) <= 10:
+                                callback(new_text[line].capitalize(), new_text[line].capitalize(), 0)
                                 continue
                             while True:
                                 if phrase[0].isalpha():
@@ -127,9 +136,10 @@ class NewDocument:
                             for _ in range(12):
                                 phrase = np.insert(phrase, 0, ' ')
                             phrase = ''.join(phrase)
-                            callback(phrase, obj[0][0][line], 0)
-        for my in callback.text:
-            table_word.append(' '.join(my.split()))
+                            callback(phrase, new_text[line], 0)
+        # for my in callback.text:
+        #     print(my)
+        #     table_word.append(' '.join(my.split()))
         return foot_flag, table_word, hyperlinks_text
 
     def adding_footnotes(self):
@@ -538,15 +548,15 @@ for filename in os.listdir(directory):
                 callback.text[j].split()) <= 10 and callback.text[j] != '' and callback.text[j].find('\t') == -
             1 else 0 for j in range(len(callback.text))]
         pictures, tables_text, summa, table_num = [1 if not isinstance(callback.text[phrase], list) and callback.text[phrase].find(
-            '.png') != -1 else 0 for phrase in range(len(callback.text))], [], 0, 0
+            '.png') != -1 else 0 for phrase in range(len(callback.text))], [], 0, -1
         tables, hyper_text = [1 if isinstance(
             callback.text[j], list) else 0 for j in range(len(callback.text))], []
         tables.append(0)
         for phrase in range(len(callback.text)):
             list_flag_num, list_flag_bul, italic_flag, bold_flag = False, False, False, False
             if isinstance(callback.text[phrase], list):
-                tables_text.extend(new_documents.adding_table(callback.text, phrase))
                 table_num += 1
+                tables_text.extend(new_documents.adding_table(callback.text, phrase))
             elif callback.text[phrase].find('.png') != -1:
                 new_documents.adding_picture(phrase)
             elif callback.text[phrase].find('\t') != -1:
