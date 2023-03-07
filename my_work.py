@@ -35,19 +35,8 @@ class LoggingCallback:
 
 class NewDocument:
 
-    def __init__(
-            self,
-            filename,
-            pt,
-            line_spacing,
-            font_name,
-            left_margin,
-            right_margin,
-            top_margin,
-            bottom_margin):
+    def __init__(self, filename):
         self.filename = filename
-        self.pt, self.line_spacing, self.font_name, self.left_margin = pt, line_spacing, font_name, left_margin
-        self.right_margin, self.top_margin, self.bottom_margin = right_margin, top_margin, bottom_margin
 
     @staticmethod
     def find_words(words):
@@ -197,7 +186,7 @@ class NewDocument:
         self.find_words(callback.text[name].split())
         run = paragrahp.add_run(callback.text[name])
         run.bold = True
-        run.font.size = Pt(self.pt + 2)
+        run.font.size = Pt(main_settings.pt + 2)
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
         p_fmt.line_spacing = 1.5
@@ -212,7 +201,7 @@ class NewDocument:
                 paragrahp = new_doc.add_paragraph('')
                 run = paragrahp.add_run(callback.text[name])
                 run.italic = True
-                run.font.size = Pt(self.pt - 2)
+                run.font.size = Pt(main_settings.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             elif pictures[name - 1] == 1 and callback.text[name] != ' ':
@@ -220,7 +209,7 @@ class NewDocument:
                 paragrahp = new_doc.add_paragraph('')
                 run = paragrahp.add_run(callback.text[name])
                 run.italic = True
-                run.font.size = Pt(self.pt - 2)
+                run.font.size = Pt(main_settings.pt - 2)
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
             else:
@@ -228,9 +217,9 @@ class NewDocument:
                 paragrahp = new_doc.add_paragraph(callback.text[name])
                 p_fmt = paragrahp.paragraph_format
                 p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            p_fmt.line_spacing = self.line_spacing
-            p_fmt.space_before = Pt(self.line_spacing)
-            p_fmt.space_after = Pt(self.line_spacing)
+            p_fmt.line_spacing = main_settings.line_spacing
+            p_fmt.space_before = Pt(main_settings.line_spacing)
+            p_fmt.space_after = Pt(main_settings.line_spacing)
         return paragrahp
 
     def adding_picture(self, name):
@@ -260,9 +249,9 @@ class NewDocument:
                 callback.text[name][callback.text[name].find('\t') + 1:], style='List Number')
         p_fmt = paragrahp.paragraph_format
         p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p_fmt.line_spacing = self.line_spacing
-        p_fmt.space_before = Pt(self.line_spacing)
-        p_fmt.space_after = Pt(self.line_spacing)
+        p_fmt.line_spacing = main_settings.line_spacing
+        p_fmt.space_before = Pt(main_settings.line_spacing)
+        p_fmt.space_after = Pt(main_settings.line_spacing)
         return paragrahp
 
     def adding_table(self, txt, name):
@@ -316,11 +305,11 @@ class NewDocument:
                         self.find_words(cells_text[row][col])
                         run = p.add_run(cells_text[row][col])
                         if len(txt[name][0]) == 1:
-                            run.font.size = Pt(self.pt)
+                            run.font.size = Pt(main_settings.pt)
                             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                         else:
                             run.bold = True
-                            run.font.size = Pt(self.pt + 2)
+                            run.font.size = Pt(main_settings.pt + 2)
                             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 else:
                     if cells_text[row][col] != '':
@@ -362,14 +351,14 @@ class NewDocument:
             header_para = header.add_paragraph('')
             run = header_para.add_run(str(up[0]))
             run.italic = True
-            run.font.size = Pt(self.pt)
+            run.font.size = Pt(main_settings.pt)
             header_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         if len(down) > 0:
             footer = new_doc.sections[0].footer
             footer_para = footer.paragraphs[0]
             footer_para.text = str(down[0]) + '\n\n'
             footer_para.runs[0].italic = True
-            footer_para.runs[0].font.size = Pt(self.pt)
+            footer_para.runs[0].font.size = Pt(main_settings.pt)
 
     def add_page_number(self, paragraph):
 
@@ -413,14 +402,14 @@ class NewDocument:
         if italic_flag:
             run = paragraph.add_run(ph_1)
             run.italic = True
-            run.font.size = Pt(self.pt - 2)
+            run.font.size = Pt(main_settings.pt - 2)
             p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
         else:
             paragraph.add_run(ph_1)
             p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p_fmt.line_spacing = self.line_spacing
-        p_fmt.space_before = Pt(self.line_spacing)
-        p_fmt.space_after = Pt(self.line_spacing)
+        p_fmt.line_spacing = main_settings.line_spacing
+        p_fmt.space_before = Pt(main_settings.line_spacing)
+        p_fmt.space_after = Pt(main_settings.line_spacing)
         part = paragraph.part
         r_id = part.relate_to(
             url,
@@ -441,19 +430,19 @@ class NewDocument:
         run._r.append(hyperlink)
         if italic_flag:
             run.italic = True
-            run.font.size = Pt(self.pt - 2)
+            run.font.size = Pt(main_settings.pt - 2)
         run.font.underline = underline
         if italic_flag:
             run = paragraph.add_run(ph_2)
             run.italic = True
-            run.font.size = Pt(self.pt - 2)
+            run.font.size = Pt(main_settings.pt - 2)
             p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
         else:
             paragraph.add_run(ph_2)
             p_fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        p_fmt.line_spacing = self.line_spacing
-        p_fmt.space_before = Pt(self.line_spacing)
-        p_fmt.space_after = Pt(self.line_spacing)
+        p_fmt.line_spacing = main_settings.line_spacing
+        p_fmt.space_before = Pt(main_settings.line_spacing)
+        p_fmt.space_after = Pt(main_settings.line_spacing)
         a = ph_1 + t + ph_2
         return hyperlink, a
 
@@ -512,14 +501,7 @@ for filename in os.listdir(directory):
     if os.path.isfile(f) and filename.endswith('.docx'):
         callback = LoggingCallback()
         files.append(filename[: filename.find('.docx')])
-        new_documents = NewDocument(filename,
-            main_settings.pt,
-            main_settings.line_spacing,
-            main_settings.font_name,
-            main_settings.left_margin,
-            main_settings.right_margin,
-            main_settings.top_margin,
-            main_settings.bottom_margin)
+        new_documents = NewDocument(filename)
         text = new_documents.adding_margins()
         if text[0]:
             docxFilename = os.path.join("Documents", str(filename))
@@ -535,12 +517,12 @@ for filename in os.listdir(directory):
             Path("Documents") / str(filename), directory).split('\n')
         new_doc = docx.Document()
         new_doc.sections[0].orientation = WD_ORIENT.PORTRAIT
-        new_doc.sections[0].left_margin = Mm(new_documents.left_margin)
-        new_doc.sections[0].right_margin = Mm(new_documents.right_margin)
-        new_doc.sections[0].top_margin = Mm(new_documents.top_margin)
-        new_doc.sections[0].bottom_margin = Mm(new_documents.bottom_margin)
-        new_doc.styles['Normal'].font.name = new_documents.font_name
-        new_doc.styles['Normal'].font.size = Pt(new_documents.pt)
+        new_doc.sections[0].left_margin = Mm(main_settings.left_margin)
+        new_doc.sections[0].right_margin = Mm(main_settings.right_margin)
+        new_doc.sections[0].top_margin = Mm(main_settings.top_margin)
+        new_doc.sections[0].bottom_margin = Mm(main_settings.bottom_margin)
+        new_doc.styles['Normal'].font.name = main_settings.font_name
+        new_doc.styles['Normal'].font.size = Pt(main_settings.pt)
         headings = [
             1 if not isinstance(
                 callback.text[j],
